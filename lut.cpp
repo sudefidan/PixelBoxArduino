@@ -9,6 +9,7 @@ std::vector<Vec3f> read3DLUTfromSD(const char *filePath, int &lutSize) {
     return lut;
   }
 
+
   int index = 0;
   const size_t bufferSize = 1024;
   char buffer[bufferSize];
@@ -37,9 +38,9 @@ std::vector<Vec3f> read3DLUTfromSD(const char *filePath, int &lutSize) {
         if (strncmp(line, "LUT_3D_SIZE", 11) == 0) {
           sscanf(line + 11, "%d", &lutSize);
           int maxLutSize = 33;  // Limit size for memory reasons
-          /*if (lutSize > maxLutSize) {
+          if (lutSize > maxLutSize) {
             lutSize = maxLutSize;
-          }*/
+          }
           lut.resize(lutSize * lutSize * lutSize);
           Serial.printf("LUT size: %d\n", lutSize);
           continue;
@@ -121,9 +122,8 @@ void applyLUTFilter(uint8_t *image_data, int width, int height, const std::vecto
       float gDelta = g - g0;
       float bDelta = b - b0;
       
-      // In a 3D LUT, the index is typically calculated as:
+      // Calculate the array indices for the 8 corner points.
       // index = r + g * lutSize + b * lutSize * lutSize
-      // This is consistent with how most 3D LUTs are structured (RG planes stacked along B)
       int i000 = r0 + g0 * lutSize + b0 * lutSize * lutSize;
       int i001 = r0 + g0 * lutSize + b1 * lutSize * lutSize;
       int i010 = r0 + g1 * lutSize + b0 * lutSize * lutSize;

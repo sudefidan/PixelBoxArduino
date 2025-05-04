@@ -5,6 +5,10 @@ BLEServer *pServer = NULL;
 BLECharacteristic *pCharacteristic = NULL;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
+unsigned long lastNotificationTime = 0;
+String lastNotificationMessage = "";
+const unsigned long NOTIFICATION_DEBOUNCE_TIME = 300; // milliseconds
+
 
 // Server callbacks
 class MyServerCallbacks : public BLEServerCallbacks
@@ -46,17 +50,17 @@ class MyCallbacks : public BLECharacteristicCallbacks
     }
 };
 
-// Initialize BLE
-bool initializeBLE(const char *deviceName)
+// Initialise BLE
+bool initialiseBLE(const char *deviceName)
 {
-    Serial.println("Starting BLE initialization!");
+    Serial.println("Starting BLE initialisation!");
 
     // Create the BLE Device
     BLEDevice::init(deviceName);
 
     // Create the BLE Server
     pServer = BLEDevice::createServer();
-    pServer->setCallbacks(new MyServerCallbacks());
+    pServer->setCallbacks(new MyServerCallbacks()); // Set callback for incoming data
 
     // Create the BLE Service
     BLEService *pService = pServer->createService(SERVICE_UUID);
@@ -73,7 +77,7 @@ bool initializeBLE(const char *deviceName)
     pCharacteristic->setCallbacks(new MyCallbacks());
 
     // Set initial value
-    pCharacteristic->setValue("ESP32 Camera Ready!");
+    pCharacteristic->setValue("PixelBox Ready!");
 
     // Start the service
     pService->start();
@@ -99,11 +103,26 @@ void notifyBLEClients(const char *message)
         return;
     }
 
+    // Check if this is the same message we just sent
+    if (lastNotificationMessage == message) {
+        unsigned long currentTime = millis();
+        // If the same message was sent recently, skip it
+        if (currentTime - lastNotificationTime < NOTIFICATION_DEBOUNCE_TIME) {
+            Serial.printf("Skipping duplicate notification: %s\n", message);
+            return;
+        }
+    }
+
     if (deviceConnected)
     {
         pCharacteristic->setValue(message);
         pCharacteristic->notify();
         Serial.printf("Notification sent: %s\n", message);
+
+
+        // Track this notification
+        lastNotificationTime = millis();
+        lastNotificationMessage = message;
     }
     else
     {
@@ -126,7 +145,6 @@ void checkBLEStatus()
     // Connection handling
     if (deviceConnected && !oldDeviceConnected)
     {
-        // Do stuff here on connecting
         oldDeviceConnected = deviceConnected;
     }
 }

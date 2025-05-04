@@ -21,7 +21,7 @@ extern bool deviceConnected;
 extern void handleBLECommand(const std::string &command);
 
 // Function declarations
-bool initializeBLE(const char *deviceName = "ESP32Camera");
+bool initialiseBLE(const char *deviceName = "ESP32Camera");
 void notifyBLEClients(const char *message);
 void setupBLECallbacks();
 void checkBLEStatus();
